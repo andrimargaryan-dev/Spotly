@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spotly.Web", "Spotly.Web\Spotly.Web.csproj", "{E655B505-F597-4809-863C-172C27095127}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spotly.Core", "Spotly.Core\Spotly.Core.csproj", "{9B04EDF0-EFE1-4CEA-AC98-DACDE1A1CAB5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spotly.Infrastructure", "Spotly.Infrastructure\Spotly.Infrastructure.csproj", "{371ED3DB-12ED-4A45-9C42-394C7A66CD85}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E655B505-F597-4809-863C-172C27095127}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E655B505-F597-4809-863C-172C27095127}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E655B505-F597-4809-863C-172C27095127}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E655B505-F597-4809-863C-172C27095127}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B04EDF0-EFE1-4CEA-AC98-DACDE1A1CAB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B04EDF0-EFE1-4CEA-AC98-DACDE1A1CAB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B04EDF0-EFE1-4CEA-AC98-DACDE1A1CAB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B04EDF0-EFE1-4CEA-AC98-DACDE1A1CAB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{371ED3DB-12ED-4A45-9C42-394C7A66CD85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{371ED3DB-12ED-4A45-9C42-394C7A66CD85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{371ED3DB-12ED-4A45-9C42-394C7A66CD85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{371ED3DB-12ED-4A45-9C42-394C7A66CD85}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
