@@ -13,11 +13,11 @@ public class Event : BaseEntity
     public int VenueId { get; set; }
     public Venue Venue { get; set; } = null!;
     
-    public string Title { get; set; } = null!;
-    public string Slug { get; set; } = null!;
-    public string Description { get; set; } = null!;
-    public string? CoverImageUrl { get; set; } = null!;
-    public string? MinAge { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? CoverImageUrl { get; set; }
+    public int? MinAge { get; set; }
     public string? Language { get; set; }
     
     public EventStatus Status { get; set; } = EventStatus.Draft;

@@ -8,7 +8,7 @@ public class Category : BaseEntity
     
     public int? ParentId { get; set; }
     public Category? Parent { get; set; }
-    public List<Category> Children { get; set; } = new List<Category>();
+    public ICollection<Category> Children { get; set; } = new List<Category>();
     
-    public List<Event> Events { get; set; } = new List<Event>();
+    public ICollection<Event> Events { get; set; } = new List<Event>();
 }

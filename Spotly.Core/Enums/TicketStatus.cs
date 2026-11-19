@@ -4,5 +4,5 @@ public enum TicketStatus
 {
     Valid,
     Used,
-    Cancelled
+    Canceled
 }

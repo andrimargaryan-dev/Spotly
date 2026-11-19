@@ -9,6 +9,7 @@ public class Venue : BaseEntity
     public District District { get; set; }
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
+    public bool IsAccessible { get; set; }
     
     public ICollection<Event> Events { get; set; } = new List<Event>();
 }
