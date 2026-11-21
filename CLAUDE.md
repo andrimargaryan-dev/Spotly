@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Spotly is an event ticketing platform for Yerevan, Armenia, built on ASP.NET Core MVC (.NET 10, `net10.0`). Organizations publish events at venues and sell tickets per session. Local context shows up in the domain: the `District` enum lists Yerevan's districts, and `PaymentMethod` includes Armenian providers (Idram, Telcell).
+Spotly is an event ticketing platform for Yerevan, Armenia, built on ASP.NET Core MVC (.NET 10, `net10.0`). Events are held at venues and tickets are sold per session. Local context shows up in the domain: the `District` enum lists Yerevan's districts, and `PaymentMethod` includes Armenian providers (Idram, Telcell).
 
-The project is early-stage. The domain model exists, but there is no DbContext, no persistence, no Identity wiring and no test project yet.
+The project is early-stage. `AppDbContext` exists, but it is not registered in `Program.cs`. There is no connection string, no migrations and no test project yet.
 
 ## Commands
 
@@ -25,23 +25,32 @@ There are no tests yet. If a test project is added, run one test with `dotnet te
 
 The solution follows a layered or "clean" layout with three projects:
 
-- **Spotly.Core**: domain entities (`Entities/`) and enums (`Enums/`). It references no other project. Its only package is `Microsoft.Extensions.Identity.Stores`, which `AppUser` needs.
-- **Spotly.Infrastructure**: references Core. It is currently empty and is meant for EF Core persistence, the DbContext and external integrations such as payment providers.
+- **Spotly.Core**: domain entities (`Entities/`), enums (`Enums/`) and constants (`Constants/`). It references no other project. Its only package is `Microsoft.Extensions.Identity.Stores`, which `AppUser` needs. EF Core packages belong in Infrastructure, not Core.
+- **Spotly.Infrastructure**: references Core. It owns the EF Core packages (`Microsoft.EntityFrameworkCore.SqlServer` and `Microsoft.AspNetCore.Identity.EntityFrameworkCore`) and holds `Data/AppDbContext`, an `IdentityDbContext<AppUser, IdentityRole<int>, int>`.
 - **Spotly.Web**: the MVC app (controllers, Razor views, `wwwroot`). It references both Core and Infrastructure. `Program.cs` is still the default template.
 
 Dependencies point inward: Core must never reference Infrastructure or Web.
 
+### AppDbContext conventions
+
+These apply to the whole model, so the entities don't show them:
+
+- Every `decimal` is stored as `(18,2)`.
+- Every enum is stored as a string with a maximum length of 32.
+- Every foreign key between domain entities uses `DeleteBehavior.Restrict`, so cascades must be handled explicitly.
+- `IEntityTypeConfiguration` classes in the Infrastructure assembly are picked up automatically.
+- `CreatedAt` and `UpdatedAt` are set only in `SaveChangesAsync`, and only for `BaseEntity` types. Synchronous `SaveChanges` doesn't set them, and neither method sets `AppUser.CreatedAt`.
+
 ### Domain model conventions
 
-- Most entities inherit `BaseEntity` (`int Id`, `CreatedAt`, `UpdatedAt?`). Two exceptions:
-  - `AppUser` extends `IdentityUser<int>`, so Identity uses **int keys**. Any Identity or DbContext setup must use the int-keyed generics.
-  - `OrganizationMember` is a plain class (a join between `AppUser` and `Organization` that carries an `OrganizationRole`).
+- Every entity inherits `BaseEntity` (`int Id`, `CreatedAt`, `UpdatedAt?`) except `AppUser`. `AppUser` extends `IdentityUser<int>`, so Identity uses **int keys**, and any Identity or DbContext setup must use the int-keyed generics.
+- Authorization uses global ASP.NET Identity roles. Take role names from `Spotly.Core.Constants.Roles` (Admin, Manager, Editor, Scanner, Finance) rather than writing string literals.
 - Relationships use an explicit FK property plus a navigation property: `int XId` plus `X X = null!`. Collections are initialized to empty lists.
-- Use `Slug` properties (on `Event`, `Organization` and `Category`) for URL-friendly lookups.
+- Use the `Slug` properties (on `Event` and `Category`) for URL-friendly lookups.
 
 ### Core flow
 
-- `Organization` → `Event`. An event belongs to one organization, one `Category` (categories form a hierarchy through `ParentId`) and one `Venue`.
+- An `Event` belongs to one `Category` (categories form a hierarchy through `ParentId`) and one `Venue`.
 - `Event` → `EventSession`: the dated occurrences of an event.
 - `Event` → `TicketType`: pricing tiers defined per event. `QuantityPerSession` sets inventory per session.
 - An `Order` is placed against a single **EventSession**, not an Event. It holds `OrderItem`s (TicketType × quantity at a snapshot `UnitPrice`), and each item issues one `Ticket` per unit (each ticket has a `QrToken` for check-in).
