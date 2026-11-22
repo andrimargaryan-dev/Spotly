@@ -10,4 +10,9 @@
       <ProjectReference Include="..\Spotly.Core\Spotly.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.15" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.15" />
+    </ItemGroup>
+
 </Project>
