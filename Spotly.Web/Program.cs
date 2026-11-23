@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.Identity;
+using Spotly.Core.Entities;
 using Spotly.Infrastructure;
+using Spotly.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +12,21 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
 
 builder.Services.AddInfrastructure(connectionString);
+
+builder.Services.AddIdentity<AppUser, IdentityRole<int>>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = false;
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/account/login";
+    options.AccessDeniedPath = "/account/access-denied";
+});
 
 var app = builder.Build();
 
@@ -23,6 +41,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();

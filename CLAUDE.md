@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Spotly is an event ticketing platform for Yerevan, Armenia, built on ASP.NET Core MVC (.NET 10, `net10.0`). Events are held at venues and tickets are sold per session. Local context shows up in the domain: the `District` enum lists Yerevan's districts, and `PaymentMethod` includes Armenian providers (Idram, Telcell).
 
-The project is early-stage. `AppDbContext` exists, but it is not registered in `Program.cs`. There is no connection string, no migrations and no test project yet.
+The project is early-stage. `AppDbContext` (SQL Server) is registered through `AddInfrastructure`. The `DefaultConnection` connection string is kept in User Secrets for Spotly.Web, not in appsettings, and the app throws at startup if it's missing. There's no test project yet.
 
 ## Commands
 
@@ -19,6 +19,17 @@ dotnet run --project Spotly.Web --launch-profile https   # https://localhost:721
 dotnet watch --project Spotly.Web                        # hot reload
 ```
 
+### Database (EF Core)
+
+Migrations live in Spotly.Infrastructure, but the EF tools need Spotly.Web as the startup project. Web holds the `Microsoft.EntityFrameworkCore.Design` package, the DI setup and the User Secrets. These commands need the `dotnet-ef` global tool.
+
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<connection string>" --project Spotly.Web
+dotnet ef migrations add <Name> --project Spotly.Infrastructure --startup-project Spotly.Web --output-dir Data/Migrations
+dotnet ef database update --project Spotly.Infrastructure --startup-project Spotly.Web
+dotnet ef migrations remove --project Spotly.Infrastructure --startup-project Spotly.Web
+```
+
 There are no tests yet. If a test project is added, run one test with `dotnet test --filter "FullyQualifiedName~TestName"`.
 
 ## Architecture
@@ -26,8 +37,14 @@ There are no tests yet. If a test project is added, run one test with `dotnet te
 The solution follows a layered or "clean" layout with three projects:
 
 - **Spotly.Core**: domain entities (`Entities/`), enums (`Enums/`) and constants (`Constants/`). It references no other project. Its only package is `Microsoft.Extensions.Identity.Stores`, which `AppUser` needs. EF Core packages belong in Infrastructure, not Core.
-- **Spotly.Infrastructure**: references Core. It owns the EF Core packages (`Microsoft.EntityFrameworkCore.SqlServer` and `Microsoft.AspNetCore.Identity.EntityFrameworkCore`) and holds `Data/AppDbContext`, an `IdentityDbContext<AppUser, IdentityRole<int>, int>`.
-- **Spotly.Web**: the MVC app (controllers, Razor views, `wwwroot`). It references both Core and Infrastructure. `Program.cs` is still the default template.
+- **Spotly.Infrastructure**: references Core. It owns the EF Core packages (`Microsoft.EntityFrameworkCore.SqlServer` and `Microsoft.AspNetCore.Identity.EntityFrameworkCore`) and holds `Data/AppDbContext`, an `IdentityDbContext<AppUser, IdentityRole<int>, int>`. It also contains:
+  - `DependencyInjection.AddInfrastructure(connectionString)`, which registers the DbContext with `UseSqlServer`;
+  - the entity configurations in `Data/Configurations/`;
+  - the migrations in `Data/Migrations/` (currently only `InitialCreate`).
+- **Spotly.Web**: the MVC app (controllers, Razor views, `wwwroot`). It references both Core and Infrastructure, and it owns the User Secrets ID and the EF Core Design package. `Program.cs` does three things:
+  - calls `AddInfrastructure`;
+  - registers Identity with `AddIdentity<AppUser, IdentityRole<int>>`, backed by `AppDbContext`. Emails must be unique, passwords need at least 8 characters, and symbols aren't required.
+  - sets the auth cookie's paths to `/account/login` and `/account/access-denied`. There's no account controller yet, so those paths don't resolve.
 
 Dependencies point inward: Core must never reference Infrastructure or Web.
 
