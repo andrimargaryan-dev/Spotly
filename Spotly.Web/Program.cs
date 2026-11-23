@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Spotly.Core.Entities;
 using Spotly.Infrastructure;
 using Spotly.Infrastructure.Data;
+using Spotly.Infrastructure.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,17 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    await IdentitySeeder.SeedAsync(
+        services.GetRequiredService<RoleManager<IdentityRole<int>>>(),
+        services.GetRequiredService<UserManager<AppUser>>(),
+        app.Configuration["Seed:AdminEmail"] ?? throw new InvalidOperationException("Seed:AdminEmail is missing."),
+        app.Configuration["Seed:AdminPassword"] ?? throw new InvalidOperationException("Seed:AdminPassword is missing."));
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
