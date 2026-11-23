@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.Extensions.Logging;
 using Spotly.Core.Entities;
 
 namespace Spotly.Infrastructure.Data.Configurations;
