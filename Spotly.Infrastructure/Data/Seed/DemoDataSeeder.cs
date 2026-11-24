@@ -4,7 +4,7 @@ using Spotly.Core.Enums;
 
 namespace Spotly.Infrastructure.Data.Seed;
 
-public class DemoDataSeeder
+public static class DemoDataSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
@@ -96,5 +96,6 @@ public class DemoDataSeeder
     }
 
     private static DateTime YerevanToUtc(DateTime date, int hour, int minute = 0) =>
-        DateTime.SpecifyKind(date.AddHours(hour - 4).AddMinutes(minute), DateTimeKind.Utc);
+        TimeZoneInfo.ConvertTimeToUtc(date.Date.AddHours(hour).AddMinutes(minute),
+            TimeZoneInfo.FindSystemTimeZoneById("Asia/Yerevan"));
 }

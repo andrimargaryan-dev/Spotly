@@ -20,8 +20,6 @@ public static class CategorySeeder
         ("Sports", "sports", null),
         ("Theatre", "theatre", null),
         ("Kids & Family", "kids-family", null),
-        
-        ////stugel count y?
     ];
 
     public static async Task SeedAsync(AppDbContext db)
