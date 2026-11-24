@@ -40,6 +40,12 @@ using (var scope = app.Services.CreateScope())
         services.GetRequiredService<UserManager<AppUser>>(),
         app.Configuration["Seed:AdminEmail"] ?? throw new InvalidOperationException("Seed:AdminEmail is missing."),
         app.Configuration["Seed:AdminPassword"] ?? throw new InvalidOperationException("Seed:AdminPassword is missing."));
+    
+    var db = services.GetRequiredService<AppDbContext>();
+    await CategorySeeder.SeedAsync(db);
+
+    if (app.Environment.IsDevelopment())
+        await DemoDataSeeder.SeedAsync(db);
 }
 
 // Configure the HTTP request pipeline.
