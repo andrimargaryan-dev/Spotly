@@ -25,6 +25,8 @@ Migrations live in Spotly.Infrastructure, but the EF tools need Spotly.Web as th
 
 ```bash
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<connection string>" --project Spotly.Web
+dotnet user-secrets set "Seed:AdminEmail" "<email>" --project Spotly.Web        # required at startup by IdentitySeeder
+dotnet user-secrets set "Seed:AdminPassword" "<password>" --project Spotly.Web
 dotnet ef migrations add <Name> --project Spotly.Infrastructure --startup-project Spotly.Web --output-dir Data/Migrations
 dotnet ef database update --project Spotly.Infrastructure --startup-project Spotly.Web
 dotnet ef migrations remove --project Spotly.Infrastructure --startup-project Spotly.Web
@@ -36,15 +38,18 @@ There are no tests yet. If a test project is added, run one test with `dotnet te
 
 The solution follows a layered or "clean" layout with three projects:
 
-- **Spotly.Core**: domain entities (`Entities/`), enums (`Enums/`) and constants (`Constants/`). It references no other project. Its only package is `Microsoft.Extensions.Identity.Stores`, which `AppUser` needs. EF Core packages belong in Infrastructure, not Core.
+- **Spotly.Core**: domain entities (`Entities/`), enums (`Enums/`), constants (`Constants/`), and the repository interfaces and `IUnitOfWork` (`Interfaces/`). It references no other project. Its only package is `Microsoft.Extensions.Identity.Stores`, which `AppUser` needs. EF Core packages belong in Infrastructure, not Core.
 - **Spotly.Infrastructure**: references Core. It owns the EF Core packages (`Microsoft.EntityFrameworkCore.SqlServer` and `Microsoft.AspNetCore.Identity.EntityFrameworkCore`) and holds `Data/AppDbContext`, an `IdentityDbContext<AppUser, IdentityRole<int>, int>`. It also contains:
-  - `DependencyInjection.AddInfrastructure(connectionString)`, which registers the DbContext with `UseSqlServer`;
+  - `DependencyInjection.AddInfrastructure(connectionString)`, which registers the DbContext with `UseSqlServer`, and registers `IUnitOfWork` and every repository as Scoped;
+  - the repository and `UnitOfWork` implementations in `Repositories/`;
   - the entity configurations in `Data/Configurations/`;
-  - the migrations in `Data/Migrations/` (currently only `InitialCreate`).
-- **Spotly.Web**: the MVC app (controllers, Razor views, `wwwroot`). It references both Core and Infrastructure, and it owns the User Secrets ID and the EF Core Design package. `Program.cs` does three things:
+  - the migrations in `Data/Migrations/` (currently only `InitialCreate`);
+  - the startup seeders in `Data/Seed/`.
+- **Spotly.Web**: the MVC app (controllers, Razor views, `wwwroot`). It references both Core and Infrastructure, and it owns the User Secrets ID and the EF Core Design package. `Program.cs` does four things:
   - calls `AddInfrastructure`;
   - registers Identity with `AddIdentity<AppUser, IdentityRole<int>>`, backed by `AppDbContext`. Emails must be unique, passwords need at least 8 characters, and symbols aren't required.
   - sets the auth cookie's paths to `/account/login` and `/account/access-denied`. There's no account controller yet, so those paths don't resolve.
+  - runs the seeders after the app is built (see Seeding below).
 
 Dependencies point inward: Core must never reference Infrastructure or Web.
 
@@ -57,6 +62,20 @@ These apply to the whole model, so the entities don't show them:
 - Every foreign key between domain entities uses `DeleteBehavior.Restrict`, so cascades must be handled explicitly.
 - `IEntityTypeConfiguration` classes in the Infrastructure assembly are picked up automatically.
 - `CreatedAt` and `UpdatedAt` are set only in `SaveChangesAsync`, and only for `BaseEntity` types. Synchronous `SaveChanges` doesn't set them, and neither method sets `AppUser.CreatedAt`.
+
+### Data access
+
+- The repository interfaces and `IUnitOfWork` are in `Spotly.Core/Interfaces`, and their implementations are in `Spotly.Infrastructure/Repositories`. Register each new repository as Scoped in `AddInfrastructure`.
+- Repositories never call `SaveChanges`. They only query, `Add` and modify tracked entities. To commit, call `IUnitOfWork.SaveChangesAsync()`, which goes through `AppDbContext.SaveChangesAsync`, where the audit timestamps are set.
+- Read queries use `AsNoTracking()`. The exception is `VenueRepository.GetByIdAsync`, which uses `FindAsync` and returns a tracked entity.
+
+### Seeding
+
+`Program.cs` runs the seeders in one scope at startup, before the request pipeline. They don't apply migrations, so the database has to be up to date first (`dotnet ef database update`). The seeders write through `AppDbContext` directly rather than through repositories or the unit of work.
+
+1. `IdentitySeeder` creates every role in `Roles.All` and an Admin user from `Seed:AdminEmail` and `Seed:AdminPassword`. Startup throws if either value is missing. To have a new role seeded, add it to `Roles.All`.
+2. `CategorySeeder` always runs. It adds any missing categories by slug, so it's safe to run repeatedly.
+3. `DemoDataSeeder` runs only in Development, and skips if any `Event` already exists. It adds demo venues and published events.
 
 ### Domain model conventions
 
